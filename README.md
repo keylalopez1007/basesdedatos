@@ -125,3 +125,18 @@ SELECT * FROM HistorialPartida WHERE usuario_id = 1 ORDER BY finalizada_en DESC;
 SELECT usuario_id, MAX(turno_alcanzado) AS mejor_turno FROM HistorialPartida GROUP BY usuario_id;
 SELECT AVG(monedas_ganadas) AS promedio_monedas, AVG(errores_cometidos) AS promedio_errores FROM HistorialPartida;
 ```
+
+La misma información está disponible para el usuario autenticado mediante
+`GET /api/partida/historial`. El script también crea la vista
+`vista_historial_partidas`, que une cada reporte con el correo del usuario:
+
+```sql
+SELECT * FROM vista_historial_partidas ORDER BY finalizada_en DESC;
+```
+
+## Material para la presentación
+
+- [Informe escrito](docs/informe-presentacion.md)
+- [Diagrama entidad-relación](docs/diagrama-er.md)
+- [Diagrama de flujo](docs/flujo-aplicacion.md)
+- [Guía de preguntas para la defensa](docs/preguntas-defensa.md)

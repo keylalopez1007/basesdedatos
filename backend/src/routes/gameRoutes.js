@@ -6,6 +6,7 @@ const router = express.Router();
 router.use(requireAuth);
 router.get('/estado', game.getState);
 router.get('/eventos', game.getEvents);
+router.get('/historial', game.listHistory);
 router.post('/iniciar', game.startGame);
 router.post('/finalizar', game.finalizeGame);
 router.post('/accion/escanear-paciente', game.scanPatient);

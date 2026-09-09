@@ -269,4 +269,24 @@ async function finalizeGame(req, res, next) {
   } catch (error) { await connection.rollback(); return next(error); } finally { connection.release(); }
 }
 
-module.exports = { startGame, getState, getEvents, scanPatient, applyTreatment, rejectPatient, useTaser, buyClass, finalizeGame };
+async function listHistory(req, res, next) {
+  try {
+    const [rows] = await pool.execute(
+      `SELECT id, usuario_id, jugador, turno_alcanzado, pacientes_curados,
+              anomalias_rechazadas, errores_cometidos, monedas_ganadas,
+              cordura_final, duracion_segundos, iniciada_en, finalizada_en
+       FROM vista_historial_partidas
+       WHERE usuario_id = ?
+       ORDER BY finalizada_en DESC, id DESC`,
+      [req.user.id]
+    );
+    return res.json({ historial: rows });
+  } catch (error) {
+    if (error.code === 'ER_NO_SUCH_TABLE') {
+      return res.status(503).json({ error: 'Falta crear la vista vista_historial_partidas.' });
+    }
+    return next(error);
+  }
+}
+
+module.exports = { startGame, getState, getEvents, scanPatient, applyTreatment, rejectPatient, useTaser, buyClass, finalizeGame, listHistory };
