@@ -1,0 +1,9 @@
+packages:
+  - backend
+  - frontend
+
+onlyBuiltDependencies:
+  - bcrypt
+
+allowBuilds:
+  bcrypt: true

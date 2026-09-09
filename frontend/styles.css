@@ -1,0 +1,55 @@
+:root { font-family: Arial, sans-serif; color: #1f2937; background: #e9f4f1; }
+body { margin: 0; min-height: 100vh; display: grid; place-items: center; }
+.card { width: min(980px, calc(100% - 2rem)); box-sizing: border-box; background: #fff; padding: 2rem; border-radius: 14px; box-shadow: 0 12px 30px #0f3d3220; }
+h1 { margin-top: 0; color: #12644f; }
+form { display: grid; gap: .6rem; }
+label { font-weight: 600; margin-top: .4rem; }
+input, button { font: inherit; padding: .7rem; border-radius: 7px; }
+input { border: 1px solid #b8c5c1; }
+button { margin-top: .8rem; border: 0; background: #12644f; color: white; cursor: pointer; font-weight: 700; }
+button:hover { background: #0c4d3c; }
+#message { min-height: 1.2rem; color: #b42318; }
+#message.success { color: #067647; }
+.game-header, .panel-title, .stats, .patient-actions, .event-row { display: flex; align-items: center; justify-content: space-between; gap: .8rem; }
+.eyebrow { color: #0f7b61; letter-spacing: .12em; font-size: .75rem; font-weight: 700; }
+.game-header h1 { margin: .25rem 0 1rem; }
+.secondary, .small-button { background: #d9eee8; color: #12644f; margin: 0; padding: .5rem .75rem; }
+.start-panel, .panel { background: #f7fbfa; border: 1px solid #d5e8e2; border-radius: 12px; padding: 1rem; margin-top: 1rem; }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 1rem; }
+.stats div { background: #12644f; color: white; border-radius: 9px; padding: .8rem; }
+.stats span, .stats strong { display: block; }
+.stats span { font-size: .75rem; opacity: .8; }
+.stats strong { font-size: 1.2rem; margin-top: .2rem; }
+.game-grid { display: grid; grid-template-columns: 1.4fr .8fr; gap: 1rem; }
+.patient-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: .7rem; }
+.patient-card, .alert-card { background: white; border: 1px solid #cde2dc; border-radius: 9px; padding: .8rem; display: grid; gap: .45rem; }
+.patient-scene { min-height: 250px; display: grid; place-items: center; background: linear-gradient(#bfe3dd, #eaf7f3); border-radius: 10px; padding: 1rem; }
+.scene-label { align-self: start; justify-self: start; font-size: .75rem; letter-spacing: .08em; color: #12644f; font-weight: 700; }
+.patient-scene .patient-list { width: min(270px, 100%); }
+.patient-scene .patient-card { text-align: center; box-shadow: 0 8px 20px #145c4b22; }
+.animal-avatar { font-size: 4rem; }
+.patient-card.distorted { background: #fff0f2; border-color: #dc5b68; animation: glitch .45s infinite alternate; }
+@keyframes glitch { from { transform: translateX(-2px); } to { transform: translateX(2px); } }
+.action-dock { display: flex; justify-content: center; gap: 1.2rem; padding: 1rem 0 .2rem; }
+.round { width: 58px; height: 58px; border-radius: 50%; padding: 0; margin: 0; font-size: 1.5rem; }
+.round.danger { background: #c74254; }.round.camera { background: #2c7bca; }.round.confirm { background: #269b68; }.round:disabled { opacity: .35; cursor: not-allowed; }
+.treatment-panel { border-color: #73b5a5; }
+.medication-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; margin: .8rem 0; }
+.med-card { background: white; border: 1px solid #cde2dc; padding: .6rem; border-radius: 8px; cursor: pointer; text-align: center; }
+.med-card input { width: auto; }
+.med-icon { font-size: 1.5rem; display: block; margin: .2rem; }
+.symptoms { color: #344e48; font-size: .9rem; line-height: 1.3; }
+.medical-guide { background: #fffdf4; border-color: #ead99a; }
+.medical-guide p { margin-top: 0; color: #5e5a42; }
+.guide-row { display: flex; justify-content: space-between; gap: 1rem; padding: .45rem 0; border-top: 1px solid #eee4bd; font-size: .85rem; }
+.guide-row span { color: #6f6a4e; text-align: right; }
+#final-report { margin-top: 1rem; padding: 1rem; background: #fffdf4; border: 1px solid #ead99a; border-radius: 9px; }
+#report-content { display: grid; grid-template-columns: 1fr 1fr; gap: .25rem 1rem; }
+.patient-card strong, .patient-card span, .alert-card span { display: block; }
+.patient-card strong { color: #12644f; font-size: 1.1rem; }
+.patient-card .state { color: #65746f; text-transform: capitalize; font-size: .85rem; }
+.alert-card { border-color: #efc56a; background: #fff9e8; }
+.muted { color: #75847f; }
+.event-row { border-bottom: 1px solid #e5eeeb; padding: .55rem 0; }
+@media (max-width: 700px) { .game-grid, .stats { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 450px) { .game-grid, .stats { grid-template-columns: 1fr; } }

@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Animal Hospital Anomaly</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="card">
+      <section id="login-view">
+        <h1>Animal Hospital Anomaly</h1>
+        <p>Ingresa para consultar el resumen de tus turnos.</p>
+        <form id="login-form">
+          <label for="email">Correo electrónico</label>
+          <input id="email" name="email" type="email" autocomplete="email" required />
+          <label for="password">Contraseña</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" minlength="8" required />
+          <button type="submit">Iniciar sesión</button>
+        </form>
+      </section>
+      <section id="profile-view" hidden>
+        <div class="game-header">
+          <div><span class="eyebrow">HOSPITAL ANIMAL</span><h1 id="welcome-message"></h1></div>
+          <div><button id="finish-game" type="button" class="secondary">Terminar partida</button><button id="logout-button" type="button" class="secondary">Salir</button></div>
+        </div>
+        <div id="game-start" class="start-panel">
+          <h2>Tu turno comienza ahora</h2>
+          <p>Atiende a los pacientes, detecta anomalías y mantén el hospital a salvo.</p>
+          <button id="start-game-button" type="button">Comenzar partida</button>
+          <div id="final-report" hidden><h2>Ticket final</h2><div id="report-content"></div></div>
+        </div>
+        <div id="game-hud" hidden>
+          <div class="stats"><div><span>Turno</span><strong id="turn-number">-</strong></div><div><span>Monedas</span><strong id="coins">-</strong></div><div><span>Cordura</span><strong id="sanity">-</strong></div><div><span>Nivel</span><strong id="level">-</strong></div><div><span>Estado</span><strong id="game-status">-</strong></div></div>
+          <section class="reception panel">
+            <div class="patient-scene"><span class="scene-label">RECEPCIÓN · PACIENTE ACTUAL</span><div id="patients" class="patient-list"></div></div>
+            <div class="action-dock"><button type="button" id="reject-patient" class="round danger" title="Rechazar anomalía">✕</button><button type="button" id="scan-patient" class="round camera" title="Escanear con cámara">◉</button><button type="button" id="confirm-patient" class="round confirm" title="Confirmar paciente real" disabled>✓</button></div>
+          </section>
+          <aside class="panel medical-guide"><div class="panel-title"><h2>Guía médica</h2><span>Ayuda</span></div><p>Escanea primero. Después usa estos síntomas como guía:</p><div class="guide-row"><b>💊 Analgésico</b><span>dolor, inflamación</span></div><div class="guide-row"><b>🧪 Antibiótico</b><span>fiebre, secreción, infección</span></div><div class="guide-row"><b>💧 Suero</b><span>deshidratación, debilidad</span></div><div class="guide-row"><b>🧴 Antiparasitario</b><span>parásitos, picazón</span></div><div class="guide-row"><b>💉 Sedante</b><span>ansiedad, agitación</span></div><div class="guide-row"><b>🔍 Observación</b><span>síntomas leves o inciertos</span></div></aside>
+          <section id="treatment-panel" class="panel treatment-panel" hidden><div class="panel-title"><h2>Camilla · Medicamentos</h2><span>Elige el tratamiento</span></div><div id="medications" class="medication-list"></div><button id="confirm-treatment" type="button">Confirmar tratamiento</button></section>
+          <section class="panel anomaly-panel"><div class="panel-title"><h2>Alertas</h2><span>⚠</span></div><div id="anomalies"><p class="muted">No hay anomalías activas.</p></div></section>
+          <section class="panel events-panel"><div class="panel-title"><h2>Eventos recientes</h2><button id="refresh-game" type="button" class="small-button">Actualizar</button></div><div id="events"><p class="muted">Sin eventos todavía.</p></div></section>
+        </div>
+      </section>
+      <p id="message" role="alert" aria-live="polite"></p>
+    </main>
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
