@@ -8,6 +8,17 @@ const hud = document.querySelector('#game-hud');
 let treatmentMode = false;
 let treatmentPatientId = null;
 let latestState = null;
+let generalTimeLeft = 60;
+let generalTimerId = null;
+let specialTimerId = null;
+let specialSpawnId = null;
+let specialRoomActive = false;
+let specialHp = 45;
+let specialTimeLeft = 12;
+let patientsHandled = 0;
+let nextSpecialAt = 3 + Math.floor(Math.random() * 3);
+let gameStatus = 'playing';
+const gameAudio = document.querySelector('#game-audio');
 
 const patientImages = {
   Luna: ['assets/luna-normal.jpg', 'assets/luna-anomalia.jpg'],
@@ -24,6 +35,33 @@ function showProfile(email) { document.querySelector('#welcome-message').textCon
 function getPatientKey(patient) { return String(patient?.nombre || 'Luna').split(' ')[0]; }
 function getPatientImage(patient, anomaly = false) { const pair = patientImages[getPatientKey(patient)] || patientImages.Luna; return anomaly ? pair[1] : pair[0]; }
 function wait(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
+function formatTime(seconds) { const safe = Math.max(0, Number(seconds) || 0); return `${String(Math.floor(safe / 60)).padStart(2, '0')}:${String(safe % 60).padStart(2, '0')}`; }
+function updateGeneralTimer() { const timer = document.querySelector('#general-timer'); if (timer) { timer.textContent = formatTime(generalTimeLeft); timer.classList.toggle('urgent', generalTimeLeft <= 10); } }
+function clearSpecialLoops() { if (specialTimerId) clearInterval(specialTimerId); if (specialSpawnId) clearTimeout(specialSpawnId); specialTimerId = null; specialSpawnId = null; const target = document.querySelector('#special-target'); if (target) { target.hidden = true; target.onclick = null; } }
+function stopGeneralClock() { if (generalTimerId) clearInterval(generalTimerId); generalTimerId = null; gameAudio.pause(); }
+async function endGeneralGame(messageText) {
+  if (gameStatus !== 'playing') return;
+  gameStatus = 'lost'; clearSpecialLoops(); stopGeneralClock(); specialRoomActive = false;
+  try { const result = await request('/partida/finalizar', { method: 'POST' }); document.querySelector('#special-room').hidden = true; hud.hidden = true; startPanel.hidden = false; showReport(result.reporte); document.querySelector('#start-game-button').textContent = 'Nueva partida'; showMessage(messageText); } catch (error) { showMessage(error.message); }
+}
+function startGeneralClock(game) {
+  if (gameStatus !== 'playing') return;
+  const elapsed = game?.iniciada_en ? Math.floor((Date.now() - new Date(game.iniciada_en).getTime()) / 1000) : 0;
+  if (generalTimerId === null) generalTimeLeft = Math.max(0, 60 - elapsed);
+  updateGeneralTimer();
+  if (generalTimeLeft <= 0) { endGeneralGame('Tiempo agotado: la partida terminó.'); return; }
+  if (generalTimerId === null) {
+    gameAudio.play().catch(() => {});
+    generalTimerId = setInterval(() => { generalTimeLeft -= 1; updateGeneralTimer(); if (generalTimeLeft <= 0) endGeneralGame('Tiempo agotado: la partida terminó.'); }, 1000);
+  }
+}
+function updateSpecialHud() { document.querySelector('#special-timer').textContent = formatTime(specialTimeLeft); document.querySelector('#special-hp').textContent = `${Math.round(specialHp)}%`; const bar = document.querySelector('#special-hp-bar'); bar.style.width = `${specialHp}%`; bar.classList.toggle('low', specialHp < 35); bar.classList.toggle('high', specialHp >= 70); }
+function specialFeedback(text, type = '') { const feedback = document.querySelector('#special-feedback'); feedback.textContent = text; feedback.className = `special-feedback ${type}`; }
+function finishSpecial(won) { clearSpecialLoops(); specialRoomActive = false; if (!won) { endGeneralGame('El paciente no sobrevivió a la Sala 7.'); return; } specialFeedback('Paciente estabilizado. Regresando a recepción.', 'success'); setTimeout(() => { document.querySelector('#special-room').hidden = true; document.querySelector('.lower-grid').hidden = false; document.querySelector('.events-panel').hidden = false; showReception(); refreshGame().catch((error) => showMessage(error.message)); }, 900); }
+function handleSpecialClick(type) { if (!specialRoomActive) return; if (type === 'heart') { specialHp = Math.min(100, specialHp + 8); specialFeedback('♥ Pulso recuperado', 'success'); } else { specialHp = Math.max(0, specialHp - 18); specialFeedback('☠ Error crítico', 'danger'); document.querySelector('#special-room').classList.add('damage-flash'); setTimeout(() => document.querySelector('#special-room').classList.remove('damage-flash'), 180); } updateSpecialHud(); if (specialHp >= 100) finishSpecial(true); if (specialHp <= 0) finishSpecial(false); }
+function spawnSpecialTarget() { if (!specialRoomActive) return; const target = document.querySelector('#special-target'); const type = Math.random() < .7 ? 'heart' : 'skull'; target.textContent = type === 'heart' ? '♥' : '💀'; target.className = `special-target ${type}`; target.style.left = `${12 + Math.random() * 76}%`; target.style.top = `${15 + Math.random() * 68}%`; target.hidden = false; target.onclick = () => { target.hidden = true; handleSpecialClick(type); }; setTimeout(() => { if (specialRoomActive) target.hidden = true; }, 400); specialSpawnId = setTimeout(spawnSpecialTarget, 400 + Math.random() * 300); }
+function openSpecialRoom() { specialRoomActive = true; treatmentMode = false; specialHp = 45; specialTimeLeft = 12; gameStatus = 'playing'; document.querySelector('#reception-scene').hidden = true; document.querySelector('#treatment-scene').hidden = true; document.querySelector('#treatment-panel').hidden = true; document.querySelector('.lower-grid').hidden = true; document.querySelector('.events-panel').hidden = true; document.querySelector('#special-room').hidden = false; updateSpecialHud(); specialFeedback('¡Mantén vivo al paciente!', ''); specialTimerId = setInterval(() => { specialTimeLeft -= 1; specialHp = Math.max(0, specialHp - 1.5); updateSpecialHud(); if (specialHp <= 0) finishSpecial(false); else if (specialTimeLeft <= 0) finishSpecial(specialHp >= 70); }, 1000); spawnSpecialTarget(); }
+function shouldTriggerSpecial() { return patientsHandled >= nextSpecialAt; }
 
 function showReport(report) {
   if (!report) return;
@@ -48,6 +86,7 @@ function patientMarkup(patient) {
 function renderState(data) {
   latestState = data;
   const game = data.partida;
+  startGeneralClock(game);
   const completed = Number(game.pacientes_curados || 0) + Number(game.anomalias_rechazadas || 0) + Number(game.errores_cometidos || 0);
   document.querySelector('#turn-number').textContent = game.turno_actual;
   document.querySelector('#coins').textContent = game.monedas;
@@ -64,7 +103,7 @@ function renderState(data) {
   document.querySelector('#anomalies').innerHTML = data.anomalias.length ? data.anomalias.map((item) => `<div class="alert-card"><strong>⚠ ${item.tipo}</strong><span>Turno ${item.turno_en_que_aparecio}</span><button type="button" data-taser="${item.id}" class="small-button">Usar táser</button></div>`).join('') : '<p class="muted">No hay anomalías activas.</p>';
   hud.hidden = false;
   startPanel.hidden = Boolean(patient);
-  if (!treatmentMode) { document.querySelector('#reception-scene').hidden = false; document.querySelector('#treatment-scene').hidden = true; }
+  if (!treatmentMode && !specialRoomActive) { document.querySelector('#reception-scene').hidden = false; document.querySelector('#treatment-scene').hidden = true; }
 }
 
 function renderTreatmentPatient(patient) {
@@ -109,7 +148,7 @@ document.querySelector('#login-form').addEventListener('submit', async (event) =
   try { const response = await fetch(`${API_URL}/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: form.get('email'), password: form.get('password') }) }); const data = await response.json(); if (!response.ok) throw new Error(data.error || 'No fue posible iniciar sesión.'); localStorage.setItem(tokenKey, data.token); await loadProfile(data.token); showMessage('', true); } catch (error) { showMessage(error.message); }
 });
 
-document.querySelector('#start-game-button').addEventListener('click', async () => { try { document.querySelector('#final-report').hidden = true; showReception(); await request('/partida/iniciar', { method: 'POST' }); await refreshGame(); showMessage('Partida iniciada.', true); } catch (error) { showMessage(error.message); } });
+document.querySelector('#start-game-button').addEventListener('click', async () => { try { document.querySelector('#final-report').hidden = true; clearSpecialLoops(); stopGeneralClock(); specialRoomActive = false; gameStatus = 'playing'; generalTimeLeft = 60; patientsHandled = 0; nextSpecialAt = 3 + Math.floor(Math.random() * 3); document.querySelector('.lower-grid').hidden = false; document.querySelector('.events-panel').hidden = false; showReception(); await request('/partida/iniciar', { method: 'POST' }); await refreshGame(); showMessage('Partida iniciada. El reloj ya está corriendo.', true); } catch (error) { showMessage(error.message); } });
 document.querySelector('#refresh-game').addEventListener('click', () => refreshGame().catch((error) => showMessage(error.message)));
 
 document.querySelector('#scan-patient').addEventListener('click', async () => {
@@ -127,13 +166,13 @@ document.querySelector('#treatment-scan').addEventListener('click', async () => 
 });
 
 document.querySelector('#confirm-treatment').addEventListener('click', async () => {
-  try { const medicamentosSeleccionados = [...document.querySelectorAll('#medications input:checked')].map((input) => input.value); const result = await request('/partida/accion/aplicar-tratamiento', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pacienteId: treatmentPatientId, medicamentosSeleccionados }) }); if (result.game_over) { hud.hidden = true; startPanel.hidden = false; showReport(result.reporte); document.querySelector('#start-game-button').textContent = 'Nueva partida'; showMessage('Partida terminada: tu cordura llegó a cero.'); return; } showReception(); await refreshGame(); showMessage(result.correcto ? 'Tratamiento correcto. El paciente fue delegado.' : 'Tratamiento incorrecto. La recepción continúa.', result.correcto); } catch (error) { showMessage(error.message); }
+  try { const medicamentosSeleccionados = [...document.querySelectorAll('#medications input:checked')].map((input) => input.value); const result = await request('/partida/accion/aplicar-tratamiento', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pacienteId: treatmentPatientId, medicamentosSeleccionados }) }); if (result.game_over) { hud.hidden = true; startPanel.hidden = false; showReport(result.reporte); document.querySelector('#start-game-button').textContent = 'Nueva partida'; showMessage('Partida terminada: tu cordura llegó a cero.'); return; } patientsHandled += 1; if (result.correcto && shouldTriggerSpecial()) { nextSpecialAt = patientsHandled + 3 + Math.floor(Math.random() * 3); openSpecialRoom(); showMessage('Evento especial: Sala 7.', true); } else { showReception(); await refreshGame(); showMessage(result.correcto ? 'Tratamiento correcto. El paciente fue delegado.' : 'Tratamiento incorrecto. La recepción continúa.', result.correcto); } } catch (error) { showMessage(error.message); }
 });
 
 document.querySelector('#back-reception').addEventListener('click', () => { showReception(); refreshGame().catch((error) => showMessage(error.message)); });
 document.querySelector('#anomalies').addEventListener('click', async (event) => { const anomalyId = event.target.dataset.taser; if (!anomalyId) return; try { await request('/partida/accion/usar-taser', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ anomaliaId: Number(anomalyId) }) }); await refreshGame(); } catch (error) { showMessage(error.message); } });
-document.querySelector('#finish-game').addEventListener('click', async () => { try { const result = await request('/partida/finalizar', { method: 'POST' }); hud.hidden = true; startPanel.hidden = false; showReport(result.reporte); document.querySelector('#start-game-button').textContent = 'Nueva partida'; showMessage('Partida guardada en el historial.', true); } catch (error) { showMessage(error.message); } });
-document.querySelector('#logout-button').addEventListener('click', () => { localStorage.removeItem(tokenKey); showLogin(); showMessage('Sesión cerrada.', true); });
+document.querySelector('#finish-game').addEventListener('click', async () => { try { const result = await request('/partida/finalizar', { method: 'POST' }); clearSpecialLoops(); stopGeneralClock(); specialRoomActive = false; hud.hidden = true; startPanel.hidden = false; showReport(result.reporte); document.querySelector('#start-game-button').textContent = 'Nueva partida'; showMessage('Partida guardada en el historial.', true); } catch (error) { showMessage(error.message); } });
+document.querySelector('#logout-button').addEventListener('click', () => { clearSpecialLoops(); stopGeneralClock(); specialRoomActive = false; localStorage.removeItem(tokenKey); showLogin(); showMessage('Sesión cerrada.', true); });
 
 const savedToken = localStorage.getItem(tokenKey);
 if (savedToken) loadProfile(savedToken).catch((error) => { localStorage.removeItem(tokenKey); showLogin(); showMessage(error.message); });
