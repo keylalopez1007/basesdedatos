@@ -30,6 +30,8 @@ const patientImages = {
 };
 
 function showMessage(text, success = false) { message.textContent = text; message.className = success ? 'success' : ''; }
+window.addEventListener('error', (event) => { showMessage(`Error de la interfaz: ${event.message || 'revisa la consola del navegador'}`); });
+window.addEventListener('unhandledrejection', (event) => { showMessage(`Error de conexión: ${event.reason?.message || 'no se pudo completar la solicitud'}`); });
 function showLogin() { loginView.hidden = false; profileView.hidden = true; }
 function showProfile(email) { document.querySelector('#welcome-message').textContent = email; loginView.hidden = true; profileView.hidden = false; }
 function getPatientKey(patient) { return String(patient?.nombre || 'Luna').split(' ')[0]; }
