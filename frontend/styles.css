@@ -29,3 +29,9 @@ html,body{height:100%;overflow:hidden}.app-frame{height:100vh;min-height:0;overf
 #profile-view .scene-wrap{height:clamp(420px,52vh,620px);min-height:420px;flex:none}
 #profile-view .lower-grid{height:auto;min-height:165px;overflow:visible}
 #profile-view .lower-grid .panel{overflow:visible}
+/* El scroll pertenece solo al área jugable; encabezado y lobby permanecen fijos. */
+#app-root,#app-root .app-frame{height:100vh;min-height:0;overflow:hidden}
+#profile-view{height:100vh;min-height:0;overflow:hidden;display:flex;flex-direction:column}
+#profile-view #game-hud{height:calc(100vh - 82px);min-height:0;display:block;overflow-y:auto;overflow-x:hidden}
+#profile-view #game-hud .scene-wrap{height:clamp(420px,52vh,620px);min-height:420px}
+#profile-view #game-hud .lower-grid{height:auto;min-height:165px;overflow:visible}
