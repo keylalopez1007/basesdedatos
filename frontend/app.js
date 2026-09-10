@@ -184,5 +184,7 @@ document.querySelector('#finish-game').addEventListener('click', async () => { t
 document.querySelector('#open-lobby').addEventListener('click', () => { forceLobby(); showMessage('Lobby abierto. Presiona Comenzar partida.', true); });
 document.querySelector('#logout-button').addEventListener('click', () => { clearSpecialLoops(); stopGeneralClock(); specialRoomActive = false; localStorage.removeItem(tokenKey); showLogin(); showMessage('Sesión cerrada.', true); });
 
+const forceLogin = new URLSearchParams(window.location.search).get('login') === '1';
 const savedToken = localStorage.getItem(tokenKey);
-if (savedToken) loadProfile(savedToken).catch((error) => { localStorage.removeItem(tokenKey); showLogin(); showMessage(error.message); });
+if (forceLogin) { localStorage.removeItem(tokenKey); showLogin(); }
+else if (savedToken) loadProfile(savedToken).catch((error) => { localStorage.removeItem(tokenKey); showLogin(); showMessage(error.message); });
