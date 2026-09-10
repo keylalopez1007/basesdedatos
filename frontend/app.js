@@ -49,7 +49,10 @@ async function endGeneralGame(messageText) {
 function startGeneralClock(game) {
   if (gameStatus !== 'playing') return;
   const elapsed = game?.iniciada_en ? Math.floor((Date.now() - new Date(game.iniciada_en).getTime()) / 1000) : 0;
-  if (generalTimerId === null) generalTimeLeft = Math.max(0, 60 - elapsed);
+  // MySQL puede devolver DATETIME sin zona horaria. Nunca permitimos que un
+  // desfase local convierta una partida de 60 segundos en 121 minutos.
+  const safeElapsed = Math.max(0, Math.min(60, elapsed));
+  if (generalTimerId === null) generalTimeLeft = Math.max(0, 60 - safeElapsed);
   updateGeneralTimer();
   if (generalTimeLeft <= 0) { endGeneralGame('Tiempo agotado: la partida terminó.'); return; }
   if (generalTimerId === null) {
