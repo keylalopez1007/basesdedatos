@@ -23,3 +23,9 @@ html,body{height:100%;overflow:hidden}.app-frame{height:100vh;min-height:0;overf
 .treatment-active #treatment-panel .med-card{min-height:55px;padding:2px;font-size:.55rem}
 .treatment-active #treatment-panel .med-icon{font-size:1rem}
 .treatment-active #treatment-panel .primary-button{width:100%;padding:5px;margin:0}
+#profile-view{height:auto;min-height:100vh;overflow-y:auto;overflow-x:hidden}
+#app-root:has(#profile-view:not([hidden])),.app-frame:has(#profile-view:not([hidden])){height:auto;min-height:100vh;overflow:visible}
+#profile-view #game-hud{height:auto;min-height:calc(100vh - 82px);overflow:visible}
+#profile-view .scene-wrap{height:clamp(420px,52vh,620px);min-height:420px;flex:none}
+#profile-view .lower-grid{height:auto;min-height:165px;overflow:visible}
+#profile-view .lower-grid .panel{overflow:visible}
