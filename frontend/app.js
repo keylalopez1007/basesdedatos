@@ -123,6 +123,7 @@ function renderTreatmentPatient(patient) {
 
 function showTreatment(patient) {
   treatmentMode = true;
+  profileView.classList.add('treatment-active');
   document.querySelector('#reception-scene').hidden = true;
   document.querySelector('#treatment-scene').hidden = false;
   renderTreatmentPatient(patient);
@@ -130,6 +131,7 @@ function showTreatment(patient) {
 
 function showReception() {
   treatmentMode = false;
+  profileView.classList.remove('treatment-active');
   treatmentPatientId = null;
   document.querySelector('#treatment-scene').hidden = true;
   document.querySelector('#reception-scene').hidden = false;
@@ -171,7 +173,7 @@ document.querySelector('#reject-patient').addEventListener('click', async () => 
 document.querySelector('#confirm-patient').addEventListener('click', () => { if (latestState?.paciente_actual) { showTreatment(latestState.paciente_actual); showMessage('Paciente delegado a la sala de tratamiento.', true); } });
 
 document.querySelector('#treatment-scan').addEventListener('click', async () => {
-  try { if (!treatmentPatientId) return; const result = await request('/partida/accion/escanear-paciente', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pacienteId: treatmentPatientId }) }); const patient = result.paciente; document.querySelector('#treatment-screen-content').innerHTML = `<strong>DIAGNÓSTICO: ${patient.nombre}</strong><small>Síntomas: ${patient.condicion}</small><b class="screen-treatment">Necesita: ${patient.tratamiento_requerido}</b>`; document.querySelector('#treatment-panel').hidden = false; const medications = [['💊', 'analgesico'], ['🧪', 'antibiotico'], ['🔍', 'observacion'], ['💧', 'suero'], ['🧴', 'antiparasitario'], ['💉', 'sedante']]; document.querySelector('#medications').innerHTML = medications.map(([icon, name]) => `<label class="med-card"><input type="checkbox" value="${name}"><span class="med-icon">${icon}</span><span>${name}</span></label>`).join(''); showMessage('Diagnóstico listo. Elige el tratamiento indicado.', true); } catch (error) { showMessage(error.message); }
+  try { if (!treatmentPatientId) return; const result = await request('/partida/accion/escanear-paciente', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pacienteId: treatmentPatientId }) }); const patient = result.paciente; document.querySelector('#treatment-screen-content').innerHTML = `<strong>OBSERVACIÓN: ${patient.nombre}</strong><small>Síntomas observados: ${patient.condicion}</small>`; document.querySelector('#treatment-panel').hidden = false; const medications = [['💊', 'analgesico'], ['🧪', 'antibiotico'], ['🔍', 'observacion'], ['💧', 'suero'], ['🧴', 'antiparasitario'], ['💉', 'sedante']]; document.querySelector('#medications').innerHTML = medications.map(([icon, name]) => `<label class="med-card"><input type="checkbox" value="${name}"><span class="med-icon">${icon}</span><span>${name}</span></label>`).join(''); showMessage('Síntomas registrados. Consulta la guía y elige el tratamiento.', true); } catch (error) { showMessage(error.message); }
 });
 
 document.querySelector('#confirm-treatment').addEventListener('click', async () => {

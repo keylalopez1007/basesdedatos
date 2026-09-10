@@ -15,3 +15,11 @@ html,body{height:100%;overflow:hidden}.app-frame{height:100vh;min-height:0;overf
 #app-root [hidden]{display:none!important}
 #profile-view .topbar{padding:4px 0 8px;min-height:58px}.topbar h1{font-size:1.35rem;margin:2px 0}.brand-mark{width:28px;height:28px;font-size:1rem}.operator{gap:7px;font-size:.55rem}.operator strong{font-size:.75rem}.operator .ghost-button{padding:5px 8px;font-size:.65rem}.stats-bar{margin:6px 0;gap:5px}.stats-bar>div{padding:6px 9px;min-height:38px}.stats-bar span{font-size:.5rem}.stats-bar strong{font-size:1rem}.game-hud,#game-hud{height:calc(100vh - 82px)}.scene-wrap{min-height:0}.lower-grid{height:165px}.lower-grid .panel{padding:10px}.events-panel{display:none}.guide-grid{gap:5px}.guide-grid div{padding:6px}.treatment-panel .medication-list{margin:7px 0}.treatment-panel .med-card{padding:5px}.treatment-panel .primary-button{margin-top:3px;padding:8px 12px}
 .operator{display:flex;flex-wrap:nowrap;align-items:center;gap:6px}.operator>span{white-space:nowrap}
+.treatment-active .medical-guide,.treatment-active .anomaly-panel{display:none}
+.treatment-active .lower-grid{grid-template-columns:1fr;height:145px}
+.treatment-active #treatment-panel{display:block;height:145px;overflow:hidden}
+.treatment-active #treatment-panel .panel-title{padding-bottom:4px}
+.treatment-active #treatment-panel .medication-list{grid-template-columns:repeat(6,1fr);gap:4px;margin:4px 0}
+.treatment-active #treatment-panel .med-card{min-height:55px;padding:2px;font-size:.55rem}
+.treatment-active #treatment-panel .med-icon{font-size:1rem}
+.treatment-active #treatment-panel .primary-button{width:100%;padding:5px;margin:0}
