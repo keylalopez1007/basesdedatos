@@ -35,3 +35,4 @@ html,body{height:100%;overflow:hidden}.app-frame{height:100vh;min-height:0;overf
 #profile-view #game-hud{height:calc(100vh - 82px);min-height:0;display:block;overflow-y:auto;overflow-x:hidden}
 #profile-view #game-hud .scene-wrap{height:clamp(420px,52vh,620px);min-height:420px}
 #profile-view #game-hud .lower-grid{height:auto;min-height:165px;overflow:visible}
+.special-target{z-index:5;pointer-events:auto}
