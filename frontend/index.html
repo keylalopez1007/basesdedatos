@@ -4,47 +4,37 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Animal Hospital Anomaly</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <main class="card">
-      <section id="login-view">
-        <h1>Animal Hospital Anomaly</h1>
-        <p>Ingresa para consultar el resumen de tus turnos.</p>
-        <form id="login-form">
-          <label for="email">Correo electrónico</label>
-          <input id="email" name="email" type="email" autocomplete="email" required />
-          <label for="password">Contraseña</label>
-          <input id="password" name="password" type="password" autocomplete="current-password" minlength="8" required />
-          <button type="submit">Iniciar sesión</button>
-        </form>
+    <main class="app-frame">
+      <section id="login-view" class="login-screen">
+        <div class="login-art" aria-hidden="true"><span class="scan-line"></span><span class="art-label">VET // 07</span></div>
+        <div class="login-panel"><span class="eyebrow">ANIMAL HOSPITAL // SECURE ACCESS</span><h1>Animal <em>Hospital</em><br />Anomaly</h1><p class="intro">La recepción está esperando. Observa, escanea y mantén el hospital a salvo.</p>
+          <form id="login-form"><label for="email">Identificador de operador</label><input id="email" name="email" type="email" autocomplete="email" placeholder="correo@hospital.com" required /><label for="password">Código de acceso</label><input id="password" name="password" type="password" autocomplete="current-password" minlength="8" placeholder="••••••••" required /><button type="submit" class="primary-button">Entrar a recepción <span>↗</span></button></form>
+          <div class="login-foot"><span class="status-dot"></span> SISTEMA EN LÍNEA <span>MY-SQL / AUTH</span></div>
+        </div>
       </section>
+
       <section id="profile-view" hidden>
-        <div class="game-header">
-          <div><span class="eyebrow">HOSPITAL ANIMAL</span><h1 id="welcome-message"></h1></div>
-          <div><button id="finish-game" type="button" class="secondary">Terminar partida</button><button id="logout-button" type="button" class="secondary">Salir</button></div>
-        </div>
-        <div id="game-start" class="start-panel">
-          <h2>Tu turno comienza ahora</h2>
-          <p>Atiende a los pacientes, detecta anomalías y mantén el hospital a salvo.</p>
-          <button id="start-game-button" type="button">Comenzar partida</button>
-          <div id="final-report" hidden><h2>Ticket final</h2><div id="report-content"></div></div>
-        </div>
+        <header class="topbar"><div class="brand-lockup"><span class="brand-mark">✚</span><div><span class="eyebrow">HOSPITAL ANIMAL</span><h1>ANOMALY <em>CONTROL</em></h1></div></div><div class="operator"><span>OPERADOR</span><strong id="welcome-message"></strong><button id="finish-game" type="button" class="ghost-button">Terminar partida</button><button id="logout-button" type="button" class="ghost-button">Salir</button></div></header>
+        <div id="game-start" class="start-panel"><div><span class="eyebrow">TURNO DE RECEPCIÓN</span><h2>Las puertas están abiertas.</h2><p>Atiende a cada animal, detecta las anomalías y delega a los pacientes reales.</p></div><button id="start-game-button" type="button" class="primary-button">Comenzar partida <span>→</span></button><div id="final-report" hidden><h2>Reporte de turno</h2><div id="report-content"></div></div></div>
+
         <div id="game-hud" hidden>
-          <div class="stats"><div><span>Turno</span><strong id="turn-number">-</strong></div><div><span>Monedas</span><strong id="coins">-</strong></div><div><span>Cordura</span><strong id="sanity">-</strong></div><div><span>Nivel</span><strong id="level">-</strong></div><div><span>Estado</span><strong id="game-status">-</strong></div></div>
-          <section class="reception panel">
-            <div class="patient-scene"><span class="scene-label">RECEPCIÓN · PACIENTE ACTUAL</span><div id="patients" class="patient-list"></div></div>
-            <div class="action-dock"><button type="button" id="reject-patient" class="round danger" title="Rechazar anomalía">✕</button><button type="button" id="scan-patient" class="round camera" title="Escanear con cámara">◉</button><button type="button" id="confirm-patient" class="round confirm" title="Confirmar paciente real" disabled>✓</button></div>
-          </section>
-          <aside class="panel medical-guide"><div class="panel-title"><h2>Guía médica</h2><span>Ayuda</span></div><p>Escanea primero. Después usa estos síntomas como guía:</p><div class="guide-row"><b>💊 Analgésico</b><span>dolor, inflamación</span></div><div class="guide-row"><b>🧪 Antibiótico</b><span>fiebre, secreción, infección</span></div><div class="guide-row"><b>💧 Suero</b><span>deshidratación, debilidad</span></div><div class="guide-row"><b>🧴 Antiparasitario</b><span>parásitos, picazón</span></div><div class="guide-row"><b>💉 Sedante</b><span>ansiedad, agitación</span></div><div class="guide-row"><b>🔍 Observación</b><span>síntomas leves o inciertos</span></div></aside>
-          <section id="treatment-panel" class="panel treatment-panel" hidden><div class="panel-title"><h2>Camilla · Medicamentos</h2><span>Elige el tratamiento</span></div><div id="medications" class="medication-list"></div><button id="confirm-treatment" type="button">Confirmar tratamiento</button></section>
-          <section class="panel anomaly-panel"><div class="panel-title"><h2>Alertas</h2><span>⚠</span></div><div id="anomalies"><p class="muted">No hay anomalías activas.</p></div></section>
-          <section class="panel events-panel"><div class="panel-title"><h2>Eventos recientes</h2><button id="refresh-game" type="button" class="small-button">Actualizar</button></div><div id="events"><p class="muted">Sin eventos todavía.</p></div></section>
+          <div class="stats-bar"><div><span>TURNO</span><strong id="turn-number">-</strong></div><div><span>MONEDAS</span><strong id="coins">-</strong></div><div><span>CORDURA</span><strong id="sanity">-</strong></div><div><span>NIVEL</span><strong id="level">-</strong></div><div><span>ESTADO</span><strong id="game-status">-</strong></div></div>
+          <div class="scene-wrap">
+            <section id="reception-scene" class="game-scene reception-scene"><div class="scene-overlay"><span class="scene-tag">RECEPCIÓN PRINCIPAL</span><span class="scene-coords">SECTOR 01 // <b>EN VIGILANCIA</b></span></div><div class="window-frame"><div class="window-title">VENTANILLA DE INGRESO <span>● LIVE</span></div><div id="patient-window" class="patient-window"><div id="patients" class="patient-list"></div><div id="curtain" class="curtain"></div></div><div class="window-bottom">CONTROL DE IDENTIDAD <span id="progress-count">0 atendidos</span></div></div><div class="camera-console"><div class="device-light"></div><span>CÁMARA</span><button type="button" id="scan-patient" class="device-button camera-button" title="Escanear con cámara">◉</button><small>REVELAR</small></div><div class="decision-console"><span>DECISIÓN</span><button type="button" id="reject-patient" class="device-button reject-button" title="Cerrar ventanilla y rechazar anomalía">✕</button><button type="button" id="confirm-patient" class="device-button accept-button" title="Delegar paciente real" disabled>✓</button><small>RECHAZAR&nbsp;&nbsp;&nbsp;&nbsp;DELEGAR</small></div><div class="reception-footer"><span>RECEPCIÓN // PACIENTE ACTUAL</span><span>PROGRESO <b id="progress-label">0 / ∞</b></span></div></section>
+            <section id="treatment-scene" class="game-scene treatment-scene" hidden><div class="scene-overlay"><span class="scene-tag">SALA DE TRATAMIENTO</span><span class="scene-coords">SECTOR 02 // <b>PROTOCOLO MÉDICO</b></span></div><div class="treatment-screen"><span class="screen-label">MEDICAL MONITOR // DIAGNÓSTICO</span><div id="treatment-screen-content"><strong>Paciente en camilla</strong><small>Presiona ESCANEAR EL PACIENTE para iniciar.</small></div><div class="screen-noise"></div></div><div class="treatment-bed"><div class="bed-patient" id="treatment-patient"></div><div class="bed-label">CAMILLA 01 // RECEPCIÓN</div></div><div class="treatment-tools"><span class="tools-label">INSTRUMENTOS</span><div class="tool-icons"><span>✚</span><span>◉</span><span>♢</span><span>⌁</span></div><button id="treatment-scan" type="button" class="scan-device">⌁&nbsp; ESCANEAR EL PACIENTE</button></div><div class="treatment-back"><button id="back-reception" type="button" class="ghost-button">← Volver a recepción</button></div></section>
+          </div>
+          <div class="lower-grid"><aside class="panel medical-guide"><div class="panel-title"><h2>Guía de protocolos</h2><span>REFERENCIA</span></div><p>Usa los síntomas escaneados para elegir el tratamiento.</p><div class="guide-grid"><div><b>💊 Analgésico</b><span>dolor · inflamación</span></div><div><b>🧪 Antibiótico</b><span>fiebre · infección</span></div><div><b>💧 Suero</b><span>deshidratación · debilidad</span></div><div><b>🧴 Antiparasitario</b><span>parásitos · picazón</span></div><div><b>💉 Sedante</b><span>ansiedad · agitación</span></div><div><b>🔍 Observación</b><span>síntoma incierto</span></div></div></aside><section id="treatment-panel" class="panel treatment-panel" hidden><div class="panel-title"><h2>Tratamientos disponibles</h2><span>CAMILLA 01</span></div><div id="medications" class="medication-list"></div><button id="confirm-treatment" type="button" class="primary-button">Aplicar tratamiento <span>→</span></button></section><aside class="panel anomaly-panel"><div class="panel-title"><h2>Alertas de anomalía</h2><span>⚠</span></div><div id="anomalies"><p class="muted">No hay anomalías activas.</p></div></aside></div>
+          <section class="panel events-panel"><div class="panel-title"><h2>Registro de eventos</h2><button id="refresh-game" type="button" class="small-button">Actualizar ↻</button></div><div id="events"><p class="muted">Sin eventos todavía.</p></div></section>
         </div>
       </section>
       <p id="message" role="alert" aria-live="polite"></p>
     </main>
-    <script src="config.js"></script>
-    <script src="app.js"></script>
+    <script src="config.js"></script><script src="app.js"></script>
   </body>
 </html>
