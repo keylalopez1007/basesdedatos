@@ -32,8 +32,9 @@ const patientImages = {
 function showMessage(text, success = false) { message.textContent = text; message.className = success ? 'success' : ''; }
 window.addEventListener('error', (event) => { showMessage(`Error de la interfaz: ${event.message || 'revisa la consola del navegador'}`); });
 window.addEventListener('unhandledrejection', (event) => { showMessage(`Error de conexión: ${event.reason?.message || 'no se pudo completar la solicitud'}`); });
-function showLogin() { loginView.hidden = false; profileView.hidden = true; }
-function showProfile(email) { document.querySelector('#welcome-message').textContent = email; loginView.hidden = true; profileView.hidden = false; }
+function showLogin() { loginView.hidden = false; profileView.hidden = true; loginView.style.display = 'block'; profileView.style.display = 'none'; }
+function showProfile(email) { document.querySelector('#welcome-message').textContent = email; loginView.hidden = true; profileView.hidden = false; loginView.style.display = 'none'; profileView.style.display = 'block'; }
+function forceLobby() { clearSpecialLoops(); stopGeneralClock(); treatmentMode = false; specialRoomActive = false; document.querySelector('#special-room').hidden = true; document.querySelector('.scene-wrap').hidden = false; document.querySelector('.lower-grid').hidden = false; document.querySelector('#reception-scene').hidden = false; document.querySelector('#treatment-scene').hidden = true; document.querySelector('#treatment-panel').hidden = true; hud.hidden = true; startPanel.hidden = false; document.querySelector('#game-over-screen').hidden = true; document.querySelector('#final-report').hidden = true; }
 function getPatientKey(patient) { return String(patient?.nombre || 'Luna').split(' ')[0]; }
 function getPatientImage(patient, anomaly = false) { const pair = patientImages[getPatientKey(patient)] || patientImages.Luna; return anomaly ? pair[1] : pair[0]; }
 function wait(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
@@ -147,6 +148,7 @@ async function loadProfile(token) {
   const data = await response.json();
   if (!response.ok) throw new Error(data.error || 'No fue posible validar la sesión.');
   showProfile(data.user.email);
+  forceLobby();
   try { await refreshGame(); } catch (_error) { startPanel.hidden = false; hud.hidden = true; }
 }
 
@@ -179,6 +181,7 @@ document.querySelector('#confirm-treatment').addEventListener('click', async () 
 document.querySelector('#back-reception').addEventListener('click', () => { showReception(); refreshGame().catch((error) => showMessage(error.message)); });
 document.querySelector('#anomalies').addEventListener('click', async (event) => { const anomalyId = event.target.dataset.taser; if (!anomalyId) return; try { await request('/partida/accion/usar-taser', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ anomaliaId: Number(anomalyId) }) }); await refreshGame(); } catch (error) { showMessage(error.message); } });
 document.querySelector('#finish-game').addEventListener('click', async () => { try { const result = await request('/partida/finalizar', { method: 'POST' }); clearSpecialLoops(); stopGeneralClock(); specialRoomActive = false; showGameOverThenReport(result.reporte, 'Partida finalizada por el operador.'); document.querySelector('#start-game-button').textContent = 'Nueva partida'; showMessage('Partida guardada en el historial.', true); } catch (error) { showMessage(error.message); } });
+document.querySelector('#open-lobby').addEventListener('click', () => { forceLobby(); showMessage('Lobby abierto. Presiona Comenzar partida.', true); });
 document.querySelector('#logout-button').addEventListener('click', () => { clearSpecialLoops(); stopGeneralClock(); specialRoomActive = false; localStorage.removeItem(tokenKey); showLogin(); showMessage('Sesión cerrada.', true); });
 
 const savedToken = localStorage.getItem(tokenKey);
