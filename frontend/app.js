@@ -8,7 +8,7 @@ const hud = document.querySelector('#game-hud');
 let treatmentMode = false;
 let treatmentPatientId = null;
 let latestState = null;
-let generalTimeLeft = 60;
+let generalTimeLeft = 180;
 let generalTimerId = null;
 let specialTimerId = null;
 let specialSpawnId = null;
@@ -51,8 +51,8 @@ function startGeneralClock(game) {
   const elapsed = game?.iniciada_en ? Math.floor((Date.now() - new Date(game.iniciada_en).getTime()) / 1000) : 0;
   // MySQL puede devolver DATETIME sin zona horaria. Nunca permitimos que un
   // desfase local convierta una partida de 60 segundos en 121 minutos.
-  const safeElapsed = Math.max(0, Math.min(60, elapsed));
-  if (generalTimerId === null) generalTimeLeft = Math.max(0, 60 - safeElapsed);
+  const safeElapsed = Math.max(0, Math.min(180, elapsed));
+  if (generalTimerId === null) generalTimeLeft = Math.max(0, 180 - safeElapsed);
   updateGeneralTimer();
   if (generalTimeLeft <= 0) { endGeneralGame('Tiempo agotado: la partida terminó.'); return; }
   if (generalTimerId === null) {
@@ -64,7 +64,7 @@ function updateSpecialHud() { document.querySelector('#special-timer').textConte
 function specialFeedback(text, type = '') { const feedback = document.querySelector('#special-feedback'); feedback.textContent = text; feedback.className = `special-feedback ${type}`; }
 function finishSpecial(won) { clearSpecialLoops(); specialRoomActive = false; if (!won) { endGeneralGame('El paciente no sobrevivió a la Sala 7.'); return; } specialFeedback('Paciente estabilizado. Regresando a recepción.', 'success'); setTimeout(() => { document.querySelector('#special-room').hidden = true; document.querySelector('.scene-wrap').hidden = false; document.querySelector('.lower-grid').hidden = false; showReception(); refreshGame().catch((error) => showMessage(error.message)); }, 900); }
 function handleSpecialClick(type) { if (!specialRoomActive) return; if (type === 'heart') { specialHp = Math.min(100, specialHp + 8); specialFeedback('♥ Pulso recuperado', 'success'); } else { specialHp = Math.max(0, specialHp - 18); specialFeedback('☠ Error crítico', 'danger'); document.querySelector('#special-room').classList.add('damage-flash'); setTimeout(() => document.querySelector('#special-room').classList.remove('damage-flash'), 180); } updateSpecialHud(); if (specialHp >= 100) finishSpecial(true); if (specialHp <= 0) finishSpecial(false); }
-function spawnSpecialTarget() { if (!specialRoomActive) return; const target = document.querySelector('#special-target'); const type = Math.random() < .7 ? 'heart' : 'skull'; target.textContent = type === 'heart' ? '♥' : '💀'; target.className = `special-target ${type}`; target.style.left = `${12 + Math.random() * 76}%`; target.style.top = `${15 + Math.random() * 68}%`; target.hidden = false; target.onclick = () => { target.hidden = true; handleSpecialClick(type); }; setTimeout(() => { if (specialRoomActive) target.hidden = true; }, 400); specialSpawnId = setTimeout(spawnSpecialTarget, 700); }
+function spawnSpecialTarget() { if (!specialRoomActive) return; const target = document.querySelector('#special-target'); const type = Math.random() < .7 ? 'heart' : 'skull'; target.textContent = type === 'heart' ? '♥' : '💀'; target.className = `special-target ${type}`; target.style.left = `${12 + Math.random() * 76}%`; target.style.top = `${15 + Math.random() * 68}%`; target.hidden = false; target.onclick = () => { target.hidden = true; handleSpecialClick(type); }; setTimeout(() => { if (specialRoomActive) target.hidden = true; }, 550); specialSpawnId = setTimeout(spawnSpecialTarget, 900); }
 function openSpecialRoom() { specialRoomActive = true; treatmentMode = false; specialHp = 45; specialTimeLeft = 12; gameStatus = 'playing'; document.querySelector('.scene-wrap').hidden = true; document.querySelector('#reception-scene').hidden = true; document.querySelector('#treatment-scene').hidden = true; document.querySelector('#treatment-panel').hidden = true; document.querySelector('.lower-grid').hidden = true; document.querySelector('#special-room').hidden = false; updateSpecialHud(); specialFeedback('¡Mantén vivo al paciente!', ''); specialTimerId = setInterval(() => { specialTimeLeft -= 1; specialHp = Math.max(0, specialHp - 1.5); updateSpecialHud(); if (specialHp <= 0) finishSpecial(false); else if (specialTimeLeft <= 0) finishSpecial(specialHp >= 70); }, 1000); spawnSpecialTarget(); }
 function shouldTriggerSpecial() { return patientsHandled >= nextSpecialAt; }
 
@@ -155,7 +155,7 @@ document.querySelector('#login-form').addEventListener('submit', async (event) =
   try { const response = await fetch(`${API_URL}/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: form.get('email'), password: form.get('password') }) }); const data = await response.json(); if (!response.ok) throw new Error(data.error || 'No fue posible iniciar sesión.'); localStorage.setItem(tokenKey, data.token); await loadProfile(data.token); showMessage('', true); } catch (error) { showMessage(error.message); }
 });
 
-document.querySelector('#start-game-button').addEventListener('click', async () => { try { document.querySelector('#final-report').hidden = true; clearSpecialLoops(); stopGeneralClock(); specialRoomActive = false; gameStatus = 'playing'; generalTimeLeft = 60; patientsHandled = 0; nextSpecialAt = 3 + Math.floor(Math.random() * 3); document.querySelector('.scene-wrap').hidden = false; document.querySelector('.lower-grid').hidden = false; showReception(); await request('/partida/iniciar', { method: 'POST' }); await refreshGame(); showMessage('Partida iniciada. El reloj ya está corriendo.', true); } catch (error) { showMessage(error.message); } });
+document.querySelector('#start-game-button').addEventListener('click', async () => { try { document.querySelector('#final-report').hidden = true; clearSpecialLoops(); stopGeneralClock(); specialRoomActive = false; gameStatus = 'playing'; generalTimeLeft = 180; updateGeneralTimer(); patientsHandled = 0; nextSpecialAt = 3 + Math.floor(Math.random() * 3); document.querySelector('.scene-wrap').hidden = false; document.querySelector('.lower-grid').hidden = false; showReception(); await request('/partida/iniciar', { method: 'POST' }); await refreshGame(); showMessage('Partida iniciada. Tienes 3 minutos.', true); } catch (error) { showMessage(error.message); } });
 document.querySelector('#refresh-game').addEventListener('click', () => refreshGame().catch((error) => showMessage(error.message)));
 
 document.querySelector('#scan-patient').addEventListener('click', async () => {
