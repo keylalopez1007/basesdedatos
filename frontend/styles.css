@@ -36,3 +36,8 @@ html,body{height:100%;overflow:hidden}.app-frame{height:100vh;min-height:0;overf
 #profile-view #game-hud .scene-wrap{height:clamp(420px,52vh,620px);min-height:420px}
 #profile-view #game-hud .lower-grid{height:auto;min-height:165px;overflow:visible}
 .special-target{z-index:5;pointer-events:auto}
+/* En partida se usa el scroll natural de la página, nunca una barra interna. */
+html:has(#profile-view:not([hidden])),body:has(#profile-view:not([hidden])){height:auto;min-height:100%;overflow-x:hidden;overflow-y:auto}
+#app-root:has(#profile-view:not([hidden])),.app-frame:has(#profile-view:not([hidden])){height:auto;min-height:100vh;overflow:visible}
+#profile-view{height:auto;min-height:100vh;overflow:visible}
+#profile-view #game-hud{height:auto;min-height:0;overflow:visible}
