@@ -28,7 +28,7 @@ app.use((_req, res) => res.status(404).json({ error: 'Ruta no encontrada.' }));
 
 app.use((error, _req, res, _next) => {
   console.error(error);
-  return res.status(500).json({ error: 'Ocurrió un error interno del servidor.' });
+  return res.status(500).json({ error: process.env.NODE_ENV === 'development' ? (error.message || 'Error interno del servidor.') : 'Ocurrió un error interno del servidor.' });
 });
 
 module.exports = app;

@@ -1,4 +1,15 @@
 const pool = require('../config/db');
+const treatmentHealth = new Map();
+let gameSchemaReady = false;
+
+async function ensureGameSchema(connection) {
+  if (gameSchemaReady) return;
+  const [partidaColumns] = await connection.execute(`SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'Partida' AND COLUMN_NAME = 'cordura'`);
+  if (!partidaColumns.length) await connection.execute(`ALTER TABLE Partida ADD COLUMN cordura INT NOT NULL DEFAULT 100`);
+  const [patientColumns] = await connection.execute(`SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'PacienteJuego' AND COLUMN_NAME = 'orden'`);
+  if (!patientColumns.length) await connection.execute(`ALTER TABLE PacienteJuego ADD COLUMN orden INT NOT NULL DEFAULT 0`);
+  gameSchemaReady = true;
+}
 
 const PATIENT_TEMPLATES = [
   ['Luna', 'dolor e inflamación', 'analgesico', 0],
@@ -8,6 +19,29 @@ const PATIENT_TEMPLATES = [
   ['Milo', 'picazón intensa y parásitos', 'antiparasitario', 0],
   ['Kira', 'ansiedad y agitación', 'sedante', 0]
 ];
+
+function inspectionData(patient) {
+  const id = Number(patient.id);
+  const floor = (id % 3) + 1;
+  const apartment = 100 + (id % 12);
+  const apartamento = apartment;
+  const anomaly = Boolean(patient.es_anomalia);
+  const requestedFloor = anomaly ? (floor === 3 ? 1 : floor + 1) : floor;
+  const roster = {
+    1: { nombre: 'Max', piso: 1, apartamento: 101, especie: 'Paciente animal registrado' },
+    2: { nombre: 'Coco', piso: 2, apartamento: 102, especie: 'Paciente animal registrado' },
+    3: { nombre: 'Kira', piso: 3, apartamento: 103, especie: 'Paciente animal registrado' }
+  };
+  if (!anomaly) roster[floor] = { nombre: patient.nombre, piso: floor, apartamento, especie: 'Paciente animal registrado' };
+  const occupant = roster[floor];
+  return {
+    archivo: { nombre: occupant.nombre, piso: floor, apartamento: occupant.apartamento, especie: occupant.especie },
+    archivos_por_piso: roster,
+    identificacion: { codigo: `AH-${String(id).padStart(4, '0')}`, nombre: patient.nombre, piso: floor, apartamento: anomaly ? apartment + 1 : apartment, vencimiento: '24/09/2026' },
+    solicitud: { codigo: `AH-${String(id).padStart(4, '0')}`, nombre: patient.nombre, piso: requestedFloor, apartamento: apartment, motivo: 'revisión veterinaria' },
+    lista_del_dia: ['Luna', 'Max', 'Nala', 'Coco', 'Milo', 'Kira']
+  };
+}
 
 async function spawnPatient(connection, partidaId, turno) {
   const template = PATIENT_TEMPLATES[(turno - 1) % PATIENT_TEMPLATES.length];
@@ -46,7 +80,7 @@ async function finishGame(connection, game) {
 async function advanceAfterPatient(connection, game, { cured = 0, anomalyRejected = 0, error = 0, coins = 0 }) {
   const nextTurn = Number(game.turno_actual) + 1;
   await connection.execute(
-    `UPDATE Partida SET turno_actual = ?, pacientes_curados = pacientes_curados + ?, anomalias_rechazadas = anomalias_rechazadas + ?, errores_cometidos = errores_cometidos + ?, monedas_ganadas = monedas_ganadas + ?, monedas = monedas + ? WHERE id = ?`,
+    `UPDATE Partida SET turno_actual = ?, pacientes_curados = pacientes_curados + ?, anomalias_rechazadas = anomalias_rechazadas + ?, errores_cometidos = errores_cometidos + ?, monedas_ganadas = monedas_ganadas + ?, monedas = GREATEST(0, monedas + ?) WHERE id = ?`,
     [nextTurn, cured, anomalyRejected, error, Math.max(coins, 0), coins, game.id]
   );
   await spawnPatient(connection, game.id, nextTurn);
@@ -66,15 +100,12 @@ async function activeGame(connection, userId) {
 async function startGame(req, res, next) {
   const connection = await pool.getConnection();
   try {
+    await ensureGameSchema(connection);
     await connection.beginTransaction();
     const current = await activeGame(connection, req.user.id);
     if (current) {
-      const [remaining] = await connection.execute(`SELECT COUNT(*) AS total FROM PacienteJuego WHERE partida_id = ? AND estado NOT IN ('curado', 'perdido')`, [current.id]);
-      if (Number(remaining[0].total) > 0) {
-        await connection.commit();
-        return res.status(200).json({ partida: current, ya_existia: true });
-      }
       await connection.execute(`UPDATE Partida SET estado = 'terminada' WHERE id = ?`, [current.id]);
+      await connection.execute(`UPDATE PacienteJuego SET estado = 'perdido' WHERE partida_id = ? AND estado NOT IN ('curado', 'perdido')`, [current.id]);
     }
     const [result] = await connection.execute(
       `INSERT INTO Partida (usuario_id, turno_actual, dificultad, monedas, nivel, exp, cordura)
@@ -120,8 +151,9 @@ async function getState(req, res, next) {
       `SELECT id, tipo, turno_en_que_aparecio, estado, paciente_asociado_id
        FROM Anomalia WHERE partida_id = ? AND estado = 'activa'`, [game.id]
     );
+    const enrichedPatients = patients.map((patient) => ({ ...patient, inspection: inspectionData(patient) }));
     connection.release();
-    return res.json({ partida: game, paciente_actual: patients[0] || null, pacientes: patients, anomalias: anomalies });
+    return res.json({ partida: game, paciente_actual: enrichedPatients[0] || null, pacientes: enrichedPatients, anomalias: anomalies });
   } catch (error) { return next(error); }
 }
 
@@ -156,7 +188,7 @@ async function scanPatient(req, res, next) {
     );
     await connection.execute(`INSERT INTO EventoJuego (partida_id, tipo, turno, data) VALUES (?, 'paciente_escaneado', ?, JSON_OBJECT('paciente_id', ?))`, [game.id, game.turno_actual, patientId]);
     connection.release();
-    return res.json({ paciente: patients[0] });
+    return res.json({ paciente: { ...patients[0], inspection: inspectionData(patients[0]) } });
   } catch (error) { return next(error); }
 }
 
@@ -195,19 +227,28 @@ async function applyTreatment(req, res, next) {
     const [expectedRows] = await connection.execute(`SELECT LOWER(m.nombre) AS nombre FROM PacienteMedicamento pm JOIN Medicamento m ON m.id = pm.medicamento_id WHERE pm.paciente_id = ?`, [patientId]);
     const expectedNames = expectedRows.map((item) => item.nombre).sort();
     const correct = expectedNames.length ? JSON.stringify(expectedNames) === JSON.stringify(selectedNames) : selectedNames.length === 1 && patient.tratamiento_requerido && patient.tratamiento_requerido.toLowerCase() === selectedNames[0];
-    const newSanity = Math.max(0, Number(game.cordura || 100) + (correct ? 0 : -20));
-    await connection.execute('UPDATE PacienteJuego SET estado = ? WHERE id = ?', [correct ? 'curado' : 'perdido', patientId]);
-    await connection.execute('UPDATE Partida SET cordura = ?, monedas = monedas + ?, pacientes_curados = pacientes_curados + ?, errores_cometidos = errores_cometidos + ?, monedas_ganadas = monedas_ganadas + ? WHERE id = ?', [newSanity, correct ? 1 : -1, correct ? 1 : 0, correct ? 0 : 1, correct ? 1 : 0, game.id]);
+    const currentHealth = treatmentHealth.get(patientId) ?? 100;
+    const patientHealth = correct ? 100 : Math.max(0, currentHealth - 25);
+    const newSanity = Math.max(0, Number(game.cordura || 100) + (correct ? 0 : -8));
+    if (correct) {
+      treatmentHealth.delete(patientId);
+      await connection.execute('UPDATE PacienteJuego SET estado = ? WHERE id = ?', ['curado', patientId]);
+      await connection.execute('UPDATE Partida SET cordura = ?, monedas = monedas + 1, pacientes_curados = pacientes_curados + 1, monedas_ganadas = monedas_ganadas + 1 WHERE id = ?', [newSanity, game.id]);
+    } else {
+      treatmentHealth.set(patientId, patientHealth);
+      await connection.execute('UPDATE PacienteJuego SET estado = ? WHERE id = ?', [patientHealth <= 0 ? 'perdido' : 'en_atencion', patientId]);
+      await connection.execute('UPDATE Partida SET cordura = ?, monedas = GREATEST(0, monedas - 1), errores_cometidos = errores_cometidos + 1 WHERE id = ?', [newSanity, game.id]);
+    }
     await connection.execute(`INSERT INTO EventoJuego (partida_id, tipo, turno, data) VALUES (?, ?, ?, JSON_OBJECT('paciente_id', ?, 'correcto', ?))`, [game.id, correct ? 'tratamiento_correcto' : 'tratamiento_incorrecto', game.turno_actual, patientId, correct]);
     let report = null;
-    if (newSanity <= 0) {
+    if (newSanity <= 0 || patientHealth <= 0) {
       const [updated] = await connection.execute('SELECT * FROM Partida WHERE id = ?', [game.id]);
       report = await finishGame(connection, updated[0]);
-    } else {
+    } else if (correct) {
       await advanceAfterPatient(connection, game, {});
     }
     connection.release();
-    return res.json({ paciente_id: patientId, correcto: correct, estado: correct ? 'curado' : 'perdido', monedas_delta: correct ? 1 : -1, cordura: newSanity, game_over: newSanity <= 0, reporte: report });
+    return res.json({ paciente_id: patientId, correcto: correct, estado: correct ? 'curado' : 'en_atencion', salud_paciente: patientHealth, monedas_delta: correct ? 1 : -1, cordura: newSanity, game_over: newSanity <= 0 || patientHealth <= 0, reporte: report });
   } catch (error) { return next(error); }
 }
 
@@ -224,7 +265,7 @@ async function rejectPatient(req, res, next) {
     const correct = Boolean(patient.es_anomalia);
     const newSanity = Math.max(0, Number(game.cordura || 100) + (correct ? 0 : -20));
     await connection.execute('UPDATE PacienteJuego SET estado = ? WHERE id = ?', [correct ? 'perdido' : 'perdido', patientId]);
-    await connection.execute('UPDATE Partida SET cordura = ?, monedas = monedas + ?, anomalias_rechazadas = anomalias_rechazadas + ?, errores_cometidos = errores_cometidos + ?, monedas_ganadas = monedas_ganadas + ? WHERE id = ?', [newSanity, correct ? 1 : -1, correct ? 1 : 0, correct ? 0 : 1, correct ? 1 : 0, game.id]);
+    await connection.execute('UPDATE Partida SET cordura = ?, monedas = GREATEST(0, monedas + ?), anomalias_rechazadas = anomalias_rechazadas + ?, errores_cometidos = errores_cometidos + ?, monedas_ganadas = monedas_ganadas + ? WHERE id = ?', [newSanity, correct ? 1 : -1, correct ? 1 : 0, correct ? 0 : 1, correct ? 1 : 0, game.id]);
     await connection.execute(`INSERT INTO EventoJuego (partida_id, tipo, turno, data) VALUES (?, ?, ?, JSON_OBJECT('paciente_id', ?, 'correcto', ?))`, [game.id, correct ? 'anomalia_rechazada' : 'error_rechazo_paciente', game.turno_actual, patientId, correct]);
     let report = null;
     if (newSanity <= 0) {
@@ -235,6 +276,29 @@ async function rejectPatient(req, res, next) {
     }
     connection.release();
     return res.json({ correcto: correct, monedas_delta: correct ? 1 : -1, cordura: newSanity, game_over: newSanity <= 0, reporte: report });
+  } catch (error) { return next(error); }
+}
+
+async function admitPatient(req, res, next) {
+  const patientId = Number(req.body.pacienteId);
+  if (!patientId) return res.status(400).json({ error: 'pacienteId es requerido.' });
+  try {
+    const connection = await pool.getConnection();
+    const game = await activeGame(connection, req.user.id);
+    if (!game) { connection.release(); return res.status(404).json({ error: 'No tienes una partida en curso.' }); }
+    const [rows] = await connection.execute('SELECT * FROM PacienteJuego WHERE id = ? AND partida_id = ?', [patientId, game.id]);
+    const patient = rows[0];
+    if (!patient) { connection.release(); return res.status(404).json({ error: 'Paciente no encontrado.' }); }
+    const correct = !Boolean(patient.es_anomalia);
+    const newSanity = Math.max(0, Number(game.cordura || 100) + (correct ? 0 : -40));
+    await connection.execute('UPDATE PacienteJuego SET estado = ? WHERE id = ?', [correct ? 'en_atencion' : 'perdido', patientId]);
+      await connection.execute('UPDATE Partida SET cordura = ?, errores_cometidos = errores_cometidos + ?, monedas = GREATEST(0, monedas + ?), monedas_ganadas = monedas_ganadas + ? WHERE id = ?', [newSanity, correct ? 0 : 1, correct ? 0 : -3, 0, game.id]);
+    await connection.execute(`INSERT INTO EventoJuego (partida_id, tipo, turno, data) VALUES (?, ?, ?, JSON_OBJECT('paciente_id', ?, 'correcto', ?))`, [game.id, correct ? 'paciente_admitido' : 'anomalia_admitida', game.turno_actual, patientId, correct]);
+    let report = null;
+    if (newSanity <= 0) { const [updated] = await connection.execute('SELECT * FROM Partida WHERE id = ?', [game.id]); report = await finishGame(connection, updated[0]); }
+    else if (!correct) await advanceAfterPatient(connection, game, {});
+    connection.release();
+    return res.json({ paciente_id: patientId, correcto: correct, cordura: newSanity, game_over: newSanity <= 0, reporte: report });
   } catch (error) { return next(error); }
 }
 
@@ -269,6 +333,19 @@ async function finalizeGame(req, res, next) {
   } catch (error) { await connection.rollback(); return next(error); } finally { connection.release(); }
 }
 
+async function abandonGame(req, res, next) {
+  try {
+    const connection = await pool.getConnection();
+    const game = await activeGame(connection, req.user.id);
+    if (game) {
+      await connection.execute(`UPDATE Partida SET estado = 'terminada' WHERE id = ?`, [game.id]);
+      await connection.execute(`UPDATE PacienteJuego SET estado = 'perdido' WHERE partida_id = ? AND estado NOT IN ('curado', 'perdido')`, [game.id]);
+    }
+    connection.release();
+    return res.json({ cerrado: true });
+  } catch (error) { return next(error); }
+}
+
 async function listHistory(req, res, next) {
   try {
     const [rows] = await pool.execute(
@@ -289,4 +366,4 @@ async function listHistory(req, res, next) {
   }
 }
 
-module.exports = { startGame, getState, getEvents, scanPatient, applyTreatment, rejectPatient, useTaser, buyClass, finalizeGame, listHistory };
+module.exports = { startGame, getState, getEvents, scanPatient, applyTreatment, rejectPatient, admitPatient, useTaser, buyClass, finalizeGame, abandonGame, listHistory };
