@@ -41,7 +41,7 @@ El frontend es HTML, CSS y JavaScript nativo. Se comunica con un backend Express
 
 ### Autenticación y seguridad
 
-Las contraseñas se procesan con bcrypt y nunca se almacenan en texto plano. El login crea un JWT con vencimiento; `requireAuth` extrae `Authorization: Bearer <token>`, valida la firma y coloca el usuario en `req.user`. Sin token o con token inválido, la API devuelve 401. `.env` contiene credenciales y `JWT_SECRET`; no debe publicarse en GitHub.
+Las contraseñas se procesan con bcrypt y nunca se almacenan en texto plano. El login crea un JWT con vencimiento; `requireAuth` extrae `Authorization: Bearer <token>`, valida la firma y coloca el usuario en `req.user`. Sin token o con token inválido, la API devuelve 401. `.env` contiene credenciales y `JWT_SECRET`; no debe publicarse en un repositorio público.
 
 ### Endpoints principales
 
@@ -82,4 +82,4 @@ El backend vuelve a validar las decisiones aunque el frontend habilite o deshabi
 7. **¿Se puede leer la contraseña?** No. Solo existe `password_hash`; bcrypt no permite recuperar la contraseña original.
 8. **¿Qué pasa sin autenticación?** `requireAuth` rechaza la ruta con 401 antes de llegar al controlador del juego.
 9. **¿Cómo se comunican frontend y backend?** Con `fetch`, JSON y el encabezado Bearer. El frontend presenta estados, pero el backend decide monedas, cordura, tratamiento y resultado.
-10. **¿Qué no debe publicarse?** `.env`, contraseñas, JWT secret, tokens y credenciales MySQL. Si se filtran, se revocan/cambian y se limpian del historial de Git.
+10. **¿Qué información sensible debe protegerse?** `.env`, contraseñas, JWT secret, tokens y credenciales MySQL. Si se filtran, se revocan/cambian y se eliminan del historial del repositorio.
